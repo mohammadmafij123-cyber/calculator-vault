@@ -1,0 +1,5 @@
+[tool.flet]
+app-name = "calculatorvault"
+version = "1.0.0"
+build-version = 1
+package-name = "com.mohammadmafij.calculatorvault"
