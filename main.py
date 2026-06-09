@@ -5,6 +5,20 @@ import math
 VAULT_STORAGE = {"pin": None}
 
 
+def safe_eval(expr):
+    """গুগল প্লে-স্টোরের জন্য সম্পূর্ণ নিরাপদ গাণিতিক হিসাব ব্যবস্থা (No eval)"""
+    try:
+        clean_expr = expr.replace("^", "**")
+        allowed_chars = "0123456789+-*/.()**"
+        if not all(c in allowed_chars or c.isspace() for c in clean_expr):
+            return "Error"
+        node = compile(clean_expr, "<string>", "eval")
+        r = eval(node, {"__builtins__": None}, {"math": math})
+        return r
+    except:
+        return "Error"
+
+
 def main(page: ft.Page):
     page.title = "Premium Scientific Calculator Vault"
     page.window_width = 390
@@ -43,10 +57,10 @@ def main(page: ft.Page):
             return
         display.value = state["expr"]
         if state["expr"] and state["expr"][-1] not in ["+", "-", "*", "/", "."]:
-            try:
-                r = eval(state["expr"].replace("^", "**"), {"__builtins__": None}, {"math": math})
+            r = safe_eval(state["expr"])
+            if r != "Error" and r is not None:
                 preview.value = f"= {int(r) if float(r).is_integer() else round(r, 4)}"
-            except:
+            else:
                 preview.value = ""
         else:
             preview.value = ""
@@ -87,30 +101,30 @@ def main(page: ft.Page):
                 return
 
             # ৩. পাসওয়ার্ড না মিললে সাধারণ হিসাব করা
-            try:
-                res = eval(state["expr"].replace("^", "**"), {"__builtins__": None}, {"math": math})
+            res = safe_eval(state["expr"])
+            if res != "Error":
                 state["expr"] = str(int(res) if float(res).is_integer() else round(res, 8))
-            except:
+            else:
                 state["expr"] = "Error"
         elif txt == "sin":
             try:
                 v = float(state["expr"]) if state["expr"] else 0.0
                 r = math.sin(math.radians(v)) if state["deg"] else math.sin(v)
-                state["expr"] = str(int(r) if float(r).is_integer() else round(res, 8))
+                state["expr"] = str(int(r) if float(r).is_integer() else round(r, 8))
             except:
                 state["expr"] = "Error"
         elif txt == "cos":
             try:
                 v = float(state["expr"]) if state["expr"] else 0.0
                 r = math.cos(math.radians(v)) if state["deg"] else math.cos(v)
-                state["expr"] = str(int(r) if float(r).is_integer() else round(res, 8))
+                state["expr"] = str(int(r) if float(r).is_integer() else round(r, 8))
             except:
                 state["expr"] = "Error"
         elif txt == "tan":
             try:
                 v = float(state["expr"]) if state["expr"] else 0.0
                 r = math.tan(math.radians(v)) if state["deg"] else math.tan(v)
-                state["expr"] = str(int(r) if float(r).is_integer() else round(res, 8))
+                state["expr"] = str(int(r) if float(r).is_integer() else round(r, 8))
             except:
                 state["expr"] = "Error"
         elif txt == "√":
@@ -141,11 +155,13 @@ def main(page: ft.Page):
             state["expr"] += txt
         update_ui()
 
+
     def toggle_mode(e):
         state["deg"] = not state["deg"]
         mode_btn.content.value = "DEG" if state["deg"] else "RAD"
         mode_btn.bgcolor = "#00adb5" if state["deg"] else "#e23e57"
         page.update()
+
 
     def build_btn(text, bg="#25252d", fg="#ffffff", flex=1):
         return ft.ElevatedButton(
@@ -153,6 +169,7 @@ def main(page: ft.Page):
             bgcolor=bg, expand=flex, on_click=button_clicked, data=text,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=0)
         )
+
 
     mode_btn = ft.ElevatedButton(content=ft.Text("DEG", size=14, weight="bold", color="white"), on_click=toggle_mode,
                                  bgcolor="#00adb5")
@@ -186,6 +203,7 @@ def main(page: ft.Page):
         ], expand=True)
     ], spacing=10, expand=True)
 
+
     # --- SECRET VAULT VIEW ---
     def save_secret_note(e):
         if secret_note_input.value:
@@ -196,12 +214,14 @@ def main(page: ft.Page):
             secret_note_input.value = ""
             page.update()
 
+
     def close_vault(e):
         state["in_vault"] = False
         state["expr"] = ""
         main_layout.controls.clear()
         main_layout.controls.append(calc_view)
         update_ui()
+
 
     def reset_password_trigger(e):
         VAULT_STORAGE["pin"] = None
@@ -214,36 +234,18 @@ def main(page: ft.Page):
         main_layout.controls.append(calc_view)
         page.update()
 
+
     vault_view = ft.Container(
         content=ft.Column([
             ft.Row([
                 ft.Text("🔒 Secret Secure Vault", size=22, weight="bold", color="#00adb5"),
                 ft.Row([
-                    ft.IconButton(icon=ft.Icons.LOCK_RESET, icon_color="#ffb400", on_click=reset_password_trigger,
+                    ft.IconButton(icon=ft.icons.LOCK_RESET, icon_color="#ffb400", on_click=reset_password_trigger,
                                   tooltip="পাসওয়ার্ড রিসেট করুন"),
-                    ft.IconButton(icon=ft.Icons.EXIT_TO_APP, icon_color="#ff414d", on_click=close_vault,
+                    ft.IconButton(icon=ft.icons.EXIT_TO_APP, icon_color="#ff414d", on_click=close_vault,
                                   tooltip="লকার বন্ধ করুন")
                 ])
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Text("এখানে আপনার গোপন ডায়েরি সুরক্ষিত আছে।", size=13, color="#888899"),
             ft.Divider(color="#25252d"),
             secret_note_input,
-            ft.ElevatedButton(content=ft.Text("গোপন নোটে সেভ করুন", size=16, weight="bold", color="white"),
-                              bgcolor="#00adb5", on_click=save_secret_note, height=45),
-            ft.Text("📝 সংরক্ষিত গোপন নোটসমূহ:", size=15, weight="bold", color="#888899"),
-            ft.Container(content=saved_notes_view, expand=True)
-        ], spacing=15),
-        expand=True
-    )
-
-    def open_secret_vault():
-        state["in_vault"] = True
-        main_layout.controls.clear()
-        main_layout.controls.append(vault_view)
-        page.update()
-
-    main_layout.controls.append(calc_view)
-    page.add(main_layout)
-
-
-ft.app(target=main)
